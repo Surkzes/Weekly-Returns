@@ -17,7 +17,7 @@ def get_Stock_Returns(ticker, startdate, enddate):
     week_begin = 0
     week_end = 0
     returns = 0
-    week = 1
+    week = 0
    
     x = np.arange(1, (len(stock_data - 1))/5)
     weekly_returns = pd.DataFrame(x)
@@ -27,11 +27,16 @@ def get_Stock_Returns(ticker, startdate, enddate):
         
         if(day_count == 1):
             week_begin = stock_data[day]
+            print("Begin ", week_begin)
             
         if(day_count == 5):      
             weekly_returns.loc[week] = (stock_data[day] - week_begin) / week_begin * 100
+            #print(weekly_returns.loc[week])
+            print("End ", stock_data[day])
+            
             week += 1
             day_count = 0
+
             
         day_count += 1
     
@@ -78,4 +83,4 @@ def print_stock_data(stock_data):
 
 
 # Run Program    
-get_Stock_Returns('SPY', '2012-1-1', '2020-7-1')
+get_Stock_Returns('TSLA', '2020-4-1', '2020-7-17')
