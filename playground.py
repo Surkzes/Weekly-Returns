@@ -63,12 +63,11 @@ def get_Stock_Returns(ticker, startdate, enddate):
     week = 0
     first_week = 0    
    
-    weekly_returns = np.arange(0, (len(stock_data)/5))
-    week_end_date = str(np.arange(0, (len(stock_data)/5)))
-    print(week_end_date)
+    x = np.arange(0, (len(stock_data)/5))
+    y = np.arange(0, (len(stock_data)/5))
     
-    #weekly_r = {'Week End Date':x, 'Weekly Return':y}
-    #weekly_r = pd.DataFrame(weekly_returns)
+    weekly_returns = {'Week End Date':x, 'Weekly Return':y}
+    weekly_returns = pd.DataFrame(weekly_returns)
 
     start_date = ymd_to_dt(startdate)
     end_date = ymd_to_dt(enddate)
@@ -89,20 +88,21 @@ def get_Stock_Returns(ticker, startdate, enddate):
                 week_end = next_opened_date(stock_data, start_date, 0)            
             else:
                 week_end = stock_data[start_date]               
-            weekly_returns[week] = (week_end - week_begin) / week_begin * 100
-            week_end_date[week] = start_date.strftime('%Y-%m-%d')
+            weekly_returns.iloc[week]['Weekly Return'] = (week_end - week_begin) / week_begin * 100
+            weekly_returns.iloc[week]['Week End Date'] = start_date.strftime('%Y-%m-%d')
             first_week = 0
             week += 1
           
         start_date += delta
         
-    max_value = int(np.amax(weekly_returns["Weekly Return"]))
-    min_value = int(np.amin(weekly_returns["Weekly Return"]))
-    
+    max_value = np.amax(weekly_returns["Weekly Return"])
+    min_value = np.amin(weekly_returns["Weekly Return"])
+    print(max_value)
+    print(min_value)
     
     # Output Return Data     
     weekly_returns_adjusted = weekly_returns.drop(np.arange(week, len(weekly_returns)))
-    print(weekly_returns_adjusted)
+    #print(weekly_returns_adjusted)
     
     plot_Graph(weekly_returns_adjusted, ticker, max_value, min_value, start_date, end_date)              
 
@@ -114,16 +114,16 @@ def plot_Graph(graph_Data, ticker, max_value, min_value, start_date, end_date):
     plt.figure(figsize=(10,6))
     
     axes = plt.axes()
-    axes.set_ylim([(min_value - 2), (max_value + 2)])
+    #axes.set_ylim([(min_value - 2), (max_value + 2)])
     axes.set_xlim(start_date, end_date)
-    axes.set_yticks(np.arange(min_value, max_value + 2, 2))
+    #axes.set_yticks(np.arange(min_value, max_value + 2, 2))
     plt.axhline(y=0,xmin=0,xmax=200,c="red",linewidth=1,zorder=0)
     
     plt.title("Weekly Stock Returns")
     plt.ylabel("Weekly Return %")
     plt.xlabel("Trading Weeks")
     
-    plt.plot(graph_Data['Weekly Return'], label=ticker)
+    graph_Data.plot(x='Week End Date', y='Weekly Return', label=ticker)
     plt.legend(framealpha=1, frameon=True)
     
     plt.show()
