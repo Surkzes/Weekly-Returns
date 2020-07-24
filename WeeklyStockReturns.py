@@ -104,8 +104,10 @@ def get_Stock_Returns(ticker, startdate, enddate):
     min_value = int(min(y))
 
     # Output Return Data    
-    plot_Graph(y, ticker, max_value, min_value, x)              
-
+    #plot_Graph(y, ticker, max_value, min_value, x)              
+    
+    # Save Graph
+    save_Graph(y, ticker, max_value, min_value, x)
 
 def get_y_count(daterange, begin_range, end_range):   
     if((daterange >= begin_range) and (daterange <=end_range)):
@@ -139,5 +141,27 @@ def plot_Graph(graph_Data, ticker, max_value, min_value, daterange):
     plt.legend(framealpha=1, frameon=True)
     plt.show()
 
+def save_Graph(graph_Data, ticker, max_value, min_value, daterange):
+    
+    y_count = get_y_count(len(daterange), 0, 5)
+    
+    plt.style.use('seaborn-ticks')    
+    plt.figure(figsize=(10,6))
+    
+    axes = plt.axes()
+    axes.set_ylim([int((min_value - 2)), int(max_value + 2)])
+    axes.set_xticks(np.arange(0, len(daterange), y_count))
+    axes.set_yticks(np.arange(int(min_value), int(max_value + 2), 2))
+    
+    plt.title("Weekly Stock Returns")
+    plt.ylabel("Weekly Return %")
+    plt.xlabel("Trading Weeks")
+    
+    plt.axhline(y=0,xmin=0,xmax=200,c="red",linewidth=1,zorder=0) 
+    plt.plot (daterange, graph_Data, label=ticker)
+    plt.legend(framealpha=1, frameon=True)
+    plt.savefig("temp_returns.png")
+    plt.close()
+    
 # Run Program    
-get_Stock_Returns('SPY', '2020-01-01', '2020-07-21')
+get_Stock_Returns('SPY', '2020-04-01', '2020-07-21')
