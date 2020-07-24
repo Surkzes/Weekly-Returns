@@ -4,6 +4,9 @@ from pandas_datareader import data as wb
 import matplotlib.pyplot as plt
 import datetime
 import pandas_market_calendars as mcal
+import timeit
+
+start = timeit.default_timer()
 
 #    Converts Y-M-D value to datetime object
 def ymd_to_dt(ymd_date):
@@ -17,9 +20,9 @@ def weekday(date):
     return datetime.datetime.weekday(ymd_to_dt(date))
 
 #    Find the next opened date
-def next_opened_date(stock_data, closed_date, rewind):
+def next_opened_date(stock_data, closed_date, rewind, nyse):
     rewind += 1
-    if(market_closed((closed_date - datetime.timedelta(days=rewind)).strftime('%Y-%m-%d'))):                               
+    if market_closed((closed_date - datetime.timedelta(days=rewind)).strftime('%Y-%m-%d'), nyse):                               
         week_begin = next_opened_date(stock_data, closed_date, rewind)                    
     else:
         week_begin = stock_data[closed_date - datetime.timedelta(days=rewind)]  
@@ -28,27 +31,20 @@ def next_opened_date(stock_data, closed_date, rewind):
             
 #   Checks if the date is a holiday
 #
-def market_closed(date):
-    
-    if (weekday(date) == 5 or weekday(date) == 6):
-        return True
-    
-    #    Create date variable for date + 1
-    year, month, day = (int(x) for x in date.split('-'))    
-    enddate = (datetime.date(year, month, day) + datetime.timedelta(days=3)).strftime('%Y-%m-%d')
-
-    #    Get business day list from date to date + 1
+def get_business_days_list(startdate, enddate):   
     nyse = mcal.get_calendar('NYSE')
-    business_days = nyse.valid_days(start_date=date, end_date=enddate).strftime('%Y-%m-%d')
-    
-    #    If date is in the list, then return true, if its not then return false
-    if(len(business_days) == 0):
-        return False
-    if(business_days[0] == date):
-        return False
-    else:
-        return True
+    business_days = nyse.valid_days(start_date=startdate, end_date=enddate).strftime('%Y-%m-%d')
+    date_list = []
+    for date in range(0, len(business_days) - 1):
+        date_list.append(business_days[date])  
+    return date_list
 
+def market_closed(date, nyse):
+    try:
+        nyse.index(date)
+        return False
+    except: 
+        return True
 # Calculate Weekly Stock Returns
 
 def get_Stock_Returns(ticker, startdate, enddate):  
@@ -73,14 +69,15 @@ def get_Stock_Returns(ticker, startdate, enddate):
     mon_fri = datetime.timedelta(days=4)
     fri_mon = datetime.timedelta(days=2)
 
+    nyse = get_business_days_list(startdate, enddate)
     
     while start_date <= end_date:              
         
         if (datetime.datetime.weekday(start_date) == 0): 
             
-            if(market_closed(start_date.strftime('%Y-%m-%d')) and (first_week == 1)):
-                week_begin = next_opened_date(stock_data, start_date, 2)                  
-            if (not(market_closed(start_date.strftime('%Y-%m-%d')))): 
+            if(market_closed(start_date.strftime('%Y-%m-%d'), nyse) and (first_week == 1)):
+                week_begin = next_opened_date(stock_data, start_date, 2, nyse)                  
+            if (not(market_closed(start_date.strftime('%Y-%m-%d'), nyse))): 
                 week_begin = stock_data[start_date]               
                 first_week = 1
             if((start_date + mon_fri) <= end_date):
@@ -88,8 +85,8 @@ def get_Stock_Returns(ticker, startdate, enddate):
             
         
         if ((first_week == 1) and (datetime.datetime.weekday(start_date) == 4)):
-            if(market_closed(start_date.strftime('%Y-%m-%d'))):
-                week_end = next_opened_date(stock_data, start_date, 0)            
+            if market_closed(start_date.strftime('%Y-%m-%d'), nyse):
+                week_end = next_opened_date(stock_data, start_date, 0, nyse)            
             else:
                 week_end = stock_data[start_date]             
             y.append((week_end - week_begin) / week_begin * 100)
@@ -103,9 +100,10 @@ def get_Stock_Returns(ticker, startdate, enddate):
     max_value = int(max(y))
     min_value = int(min(y))
 
-    # Output Return Data    
+    # Output Return Data  
+    # Show Graph  
     #plot_Graph(y, ticker, max_value, min_value, x)              
-    
+
     # Save Graph
     save_Graph(y, ticker, max_value, min_value, x)
 
@@ -116,8 +114,6 @@ def get_y_count(daterange, begin_range, end_range):
         begin_range += 5
         end_range += 5     
         return 1 + get_y_count(daterange, begin_range, end_range)
-
-
 
 #     Graph Weekly Return Data         
 def plot_Graph(graph_Data, ticker, max_value, min_value, daterange):
@@ -140,7 +136,7 @@ def plot_Graph(graph_Data, ticker, max_value, min_value, daterange):
     plt.plot (daterange, graph_Data, label=ticker)
     plt.legend(framealpha=1, frameon=True)
     plt.show()
-
+    
 def save_Graph(graph_Data, ticker, max_value, min_value, daterange):
     
     y_count = get_y_count(len(daterange), 0, 5)
@@ -163,5 +159,10 @@ def save_Graph(graph_Data, ticker, max_value, min_value, daterange):
     plt.savefig("temp_returns.png")
     plt.close()
     
+
 # Run Program    
 get_Stock_Returns('SPY', '2020-04-01', '2020-07-21')
+
+stop = timeit.default_timer()
+
+print('Time: ', stop - start)  
