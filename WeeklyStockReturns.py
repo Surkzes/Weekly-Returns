@@ -23,7 +23,7 @@ def next_opened_date(stock_data, closed_date, rewind):
         week_begin = next_opened_date(stock_data, closed_date, rewind)                    
     else:
         week_begin = stock_data[closed_date - datetime.timedelta(days=rewind)]  
-    print("Market Closed moved backwards: ", rewind, "closed date ", closed_date)    
+    #print("Market Closed moved backwards: ", rewind, "closed date ", closed_date)    
     return week_begin        
             
 #   Checks if the date is a holiday
@@ -70,26 +70,23 @@ def get_Stock_Returns(ticker, startdate, enddate):
     end_date = ymd_to_dt(enddate)
     
     delta = datetime.timedelta(days=1)
-    mon_fri = datetime.timedelta(days=3)
+    mon_fri = datetime.timedelta(days=4)
     fri_mon = datetime.timedelta(days=2)
-    
-    print(len(x))
-    print(len(y))
 
     
     while start_date <= end_date:              
-            
+        
         if (datetime.datetime.weekday(start_date) == 0): 
             
-            print(start_date)
             if(market_closed(start_date.strftime('%Y-%m-%d')) and (first_week == 1)):
                 week_begin = next_opened_date(stock_data, start_date, 2)                  
             if (not(market_closed(start_date.strftime('%Y-%m-%d')))): 
                 week_begin = stock_data[start_date]               
                 first_week = 1
-            start_date += mon_fri
+            if((start_date + mon_fri) <= end_date):
+                start_date += mon_fri
             
-
+        
         if ((first_week == 1) and (datetime.datetime.weekday(start_date) == 4)):
             if(market_closed(start_date.strftime('%Y-%m-%d'))):
                 week_end = next_opened_date(stock_data, start_date, 0)            
@@ -100,55 +97,47 @@ def get_Stock_Returns(ticker, startdate, enddate):
             
             week += 1
             start_date += fri_mon
-            
+           
         start_date += delta
 
     max_value = int(max(y))
     min_value = int(min(y))
 
-    max_date = max(x)
-    min_date = min(x)
-    print("Len X",len(x))
-    print("Len Y",len(y))
     # Output Return Data    
-    plot_Graph(y, ticker, max_value, min_value, x, max_date, min_date)              
+    plot_Graph(y, ticker, max_value, min_value, x)              
+
+
+def get_y_count(daterange, begin_range, end_range):   
+    if((daterange >= begin_range) and (daterange <=end_range)):
+        return 1
+    else:
+        begin_range += 5
+        end_range += 5     
+        return 1 + get_y_count(daterange, begin_range, end_range)
+
 
 
 #     Graph Weekly Return Data         
-def plot_Graph(graph_Data, ticker, max_value, min_value, daterange, max_date, min_date):
+def plot_Graph(graph_Data, ticker, max_value, min_value, daterange):
+    
+    y_count = get_y_count(len(daterange), 0, 5)
     
     plt.style.use('seaborn-ticks')    
     plt.figure(figsize=(10,6))
-    
-    y_count = 10
-    if(len(daterange) <= 20):
-        y_count = 4
-    else: 
-        if((len(daterange) > 20) and (len(daterange) <=50 )):
-            y_count = 10
-        else:
-            if((len(daterange) > 50) and (len(daterange) <=100)):
-                y_count = 20
-            else:   
-                if((len(daterange) > 100) and (len(daterange) <=200)):
-                    y_count = 30
     
     axes = plt.axes()
     axes.set_ylim([int((min_value - 2)), int(max_value + 2)])
     axes.set_xticks(np.arange(0, len(daterange), y_count))
     axes.set_yticks(np.arange(int(min_value), int(max_value + 2), 2))
-    plt.axhline(y=0,xmin=0,xmax=200,c="red",linewidth=1,zorder=0)
     
     plt.title("Weekly Stock Returns")
     plt.ylabel("Weekly Return %")
     plt.xlabel("Trading Weeks")
     
+    plt.axhline(y=0,xmin=0,xmax=200,c="red",linewidth=1,zorder=0) 
     plt.plot (daterange, graph_Data, label=ticker)
-
-    print(axes.get_xticks())
     plt.legend(framealpha=1, frameon=True)
-    
     plt.show()
 
 # Run Program    
-get_Stock_Returns('SPY', '2017-01-01', '2020-07-20')
+get_Stock_Returns('SPY', '2020-01-01', '2020-07-21')
