@@ -61,68 +61,94 @@ def get_Stock_Returns(ticker, startdate, enddate):
     week_begin = 0
     week_end = 0
     week = 0
-    first_week = 0
-    
+    first_week = 0    
    
-    x = np.arange(0, (len(stock_data)/5))
-    weekly_returns = pd.DataFrame(x)
-
+    y = []
+    x = []
+    
     start_date = ymd_to_dt(startdate)
     end_date = ymd_to_dt(enddate)
+    
     delta = datetime.timedelta(days=1)
+    mon_fri = datetime.timedelta(days=3)
+    fri_mon = datetime.timedelta(days=2)
+    
+    print(len(x))
+    print(len(y))
 
     
     while start_date <= end_date:              
             
         if (datetime.datetime.weekday(start_date) == 0): 
-            if(market_closed(start_date.strftime('%Y-%m-%d'))):
+            
+            print(start_date)
+            if(market_closed(start_date.strftime('%Y-%m-%d')) and (first_week == 1)):
                 week_begin = next_opened_date(stock_data, start_date, 2)                  
-            else: 
+            if (not(market_closed(start_date.strftime('%Y-%m-%d')))): 
                 week_begin = stock_data[start_date]               
-            first_week = 1
+                first_week = 1
+            start_date += mon_fri
+            
 
         if ((first_week == 1) and (datetime.datetime.weekday(start_date) == 4)):
             if(market_closed(start_date.strftime('%Y-%m-%d'))):
                 week_end = next_opened_date(stock_data, start_date, 0)            
             else:
-                week_end = stock_data[start_date]               
-            weekly_returns.loc[week] = (week_end - week_begin) / week_begin * 100
-            first_week = 0
+                week_end = stock_data[start_date]             
+            y.append((week_end - week_begin) / week_begin * 100)
+            x.append(start_date.strftime('%Y-%m-%d'))
+            
             week += 1
-          
+            start_date += fri_mon
+            
         start_date += delta
-        
-    max_value = int(np.amax(weekly_returns))
-    min_value = int(np.amin(weekly_returns))
-    
-    
-    # Output Return Data     
-    weekly_returns_adjusted = weekly_returns.drop(np.arange(week, len(weekly_returns)))
-    print(weekly_returns_adjusted)
-    
-    plot_Graph(weekly_returns_adjusted, ticker, max_value, min_value)              
 
+    max_value = int(max(y))
+    min_value = int(min(y))
+
+    max_date = max(x)
+    min_date = min(x)
+    print("Len X",len(x))
+    print("Len Y",len(y))
+    # Output Return Data    
+    plot_Graph(y, ticker, max_value, min_value, x, max_date, min_date)              
 
 
 #     Graph Weekly Return Data         
-def plot_Graph(graph_Data, ticker, max_value, min_value):
+def plot_Graph(graph_Data, ticker, max_value, min_value, daterange, max_date, min_date):
     
     plt.style.use('seaborn-ticks')    
     plt.figure(figsize=(10,6))
     
+    y_count = 10
+    if(len(daterange) <= 20):
+        y_count = 4
+    else: 
+        if((len(daterange) > 20) and (len(daterange) <=50 )):
+            y_count = 10
+        else:
+            if((len(daterange) > 50) and (len(daterange) <=100)):
+                y_count = 20
+            else:   
+                if((len(daterange) > 100) and (len(daterange) <=200)):
+                    y_count = 30
+    
     axes = plt.axes()
-    axes.set_ylim([(min_value - 2), (max_value + 2)])
-    axes.set_yticks(np.arange(min_value, max_value + 2, 2))
+    axes.set_ylim([int((min_value - 2)), int(max_value + 2)])
+    axes.set_xticks(np.arange(0, len(daterange), y_count))
+    axes.set_yticks(np.arange(int(min_value), int(max_value + 2), 2))
     plt.axhline(y=0,xmin=0,xmax=200,c="red",linewidth=1,zorder=0)
     
     plt.title("Weekly Stock Returns")
     plt.ylabel("Weekly Return %")
     plt.xlabel("Trading Weeks")
     
-    plt.plot(graph_Data, label=ticker)
+    plt.plot (daterange, graph_Data, label=ticker)
+
+    print(axes.get_xticks())
     plt.legend(framealpha=1, frameon=True)
     
     plt.show()
 
 # Run Program    
-get_Stock_Returns('SPY', '2020-01-01', '2020-07-20')
+get_Stock_Returns('SPY', '2017-01-01', '2020-07-20')
